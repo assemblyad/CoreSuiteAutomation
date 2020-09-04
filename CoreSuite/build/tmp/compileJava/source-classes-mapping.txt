@@ -1,8 +1,8 @@
-Square.java
- Square
-Point.java
- Point
-MyFirstProgram.java
- MyFirstProgram
-Rectangle.java
- Rectangle
+com/stqa/jft/coresuite/Rectangle.java
+ com.stqa.jft.coresuite.Rectangle
+com/stqa/jft/coresuite/MyFirstProgram.java
+ com.stqa.jft.coresuite.MyFirstProgram
+com/stqa/jft/coresuite/Square.java
+ com.stqa.jft.coresuite.Square
+com/stqa/jft/coresuite/Point.java
+ com.stqa.jft.coresuite.Point

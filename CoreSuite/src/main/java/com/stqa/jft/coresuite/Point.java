@@ -1,4 +1,4 @@
-//package ru.stqa.pft.sandbox;
+package com.stqa.jft.coresuite;//package ru.stqa.pft.sandbox;
 
 public class Point {
   int x;

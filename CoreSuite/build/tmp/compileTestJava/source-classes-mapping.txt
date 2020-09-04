@@ -1,0 +1,4 @@
+com/stqa/jft/coresuite/PointTest.java
+ com.stqa.jft.coresuite.PointTest
+com/stqa/jft/coresuite/SquareTests.java
+ com.stqa.jft.coresuite.SquareTests

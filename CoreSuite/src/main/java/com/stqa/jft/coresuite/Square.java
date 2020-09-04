@@ -1,4 +1,4 @@
-//package ru.stqa.pft.sandbox;
+package com.stqa.jft.coresuite;
 
 public class Square {
   public Square (double l){
