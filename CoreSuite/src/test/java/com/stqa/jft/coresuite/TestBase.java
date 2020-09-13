@@ -2,11 +2,9 @@ package com.stqa.jft.coresuite;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 import java.util.List;
@@ -20,212 +18,270 @@ public class TestBase {
   public void setUp() throws Exception {
 //    wd = new FirefoxDriver();
     wd = new ChromeDriver();
-    wd.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+    wd.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
     wd.get("http://ohisnapdevapp34:8080/webapp/homepage.zul");
-    waitWebElement(wd,"//div[3]/table/tbody/tr","xpath");
+    waitWebElement(wd, "//div[3]/table/tbody/tr", "xpath");
     login("developer", "password");
   }
 
   private void login(String userName, String password) {
-    extractID();
     int totalAttempts = 3;
-    Boolean webElementDisplayed=true;
-    while (totalAttempts != 0 && webElementDisplayed) {
-
+    while (totalAttempts != 0) {
       if (userName == "developer" && password == "password") {
-        wd.findElement(By.id(finalId+"x")).clear();
-        wd.findElement(By.id(finalId+"x")).sendKeys(userName);
-        wd.findElement(By.id(finalId+"_0")).clear();
-        wd.findElement(By.id(finalId+"_0")).sendKeys(password);
-        wd.findElement(By.id(finalId+"50")).click();
-        webElementDisplayed=waitForDisplayed(By.id(finalId+"20-cnt"),2);
+        extractID();
+//        type("Title", generalPersonForm.getTitle(),"span", null,null);
+        wd.findElement(By.name("j_username")).clear();
+        wd.findElement(By.name("j_username")).sendKeys(userName);
+        wd.findElement(By.name("j_password")).clear();
+        wd.findElement(By.name("j_password")).sendKeys(password);
+        click("Login", "button", "", null, null);
 
-        if (webElementDisplayed==true) totalAttempts--;
-
-        return;
-
-      } else {
-        System.out.println("Incorrect Login");
-        totalAttempts--;
-        System.out.println(totalAttempts);
-
+        if (isElementPresent(By.xpath("//a[@class='appLink z-a'][normalize-space(text())='Logout']"))) {
+          break;
+        } else {
+          totalAttempts--;
+          System.out.println("Current try is " + totalAttempts);
+        }
       }
 
-    }
-
-    if (totalAttempts == 0) {
-
-      System.out.println("Maximum number of attempts exceeded");
+      if (totalAttempts == 0) {
+        System.out.println("Maximum number of attempts exceeded");
+      }
     }
   }
 
   protected void returnToHomeTab() {
-    wd.findElement(By.id(finalId+"v")).click();
-    waitWebElement(wd,"//div[3]/table/tbody/tr","xpath");
+    click("Home", "span", null, null, null);
+//    wd.findElement(By.id(finalId + "v")).click();
+    waitWebElement(wd, "//div[3]/table/tbody/tr", "xpath");
   }
 
   protected void gotoCustomerManagement() {
-    click(By.id(finalId+"60-cave"),5);
-
-
-
-    //waitWebElement(wd, finalId +"60-cave","id");
-    //wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[3]/table/tbody/tr")));
-    //wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(finalIdN+"60-cave")));
-
+    click("Customer Management", "div", null, null, null);
+    //click(By.xpath("//div[@class='z-caption-content'][contains(text(),'Customer Management')]"), 5);
   }
-
   protected void click(By locator,Integer timeout ) {
-      waitForDisplayed((locator),timeout);
-      wd.findElement(locator).click();
+    waitForDisplayed((locator),timeout);
+    wd.findElement(locator).click();
   }
 
-  protected void type(By locator,String stringToType, Integer timeout ) {
-    waitForDisplayed((locator),timeout);
-    wd.findElement(locator).clear();
-    wd.findElement(locator).sendKeys(stringToType);
+  protected void click(String buttonName, String tagName, String fieldProperty, Integer timeout, Integer index) {
+    String xpath = getXpath(buttonName, tagName, fieldProperty, index);
+    if (!waitForDisplayed((By.xpath(xpath)), timeout)) {
 
+      System.out.println("The click on button/link named " + buttonName + " didn't work, the tag name and field property as following " + tagName + fieldProperty);
+    }
+    wd.findElement(By.xpath(xpath)).click();
+  }
+
+  protected void type(By locator, String stringToType, Integer timeout) {
+
+
+    String webElementId = getLastObjectId(locator.toString().replace("By.xpath:", ""));
+    String className = wd.findElement(By.id(webElementId)).getAttribute("class");
+
+    waitForDisplayed((By.id(webElementId)), timeout);
+
+    switch (className) {
+      case "z-combobox-input":
+        wd.findElement(By.xpath(locator.toString().replace("By.xpath:", "").concat("[@id='" + webElementId + "']").concat("//following-sibling::a"))).click();
+        wd.findElement(By.xpath("//span[@class='z-comboitem-text'][text()='" + stringToType + "']")).click();
+        break;
+
+      default:
+        if (wd.findElement(locator).toString().contains(("//span[normalize-space(text())='Address']//parent::div[@class='z-vlayout-inner']//following-sibling::div//input"))) {
+          List<WebElement> elements = wd.findElements(locator);
+          webElementId = elements.get(elements.size() - 2).getAttribute("id");
+        }
+        wd.findElement(By.xpath(locator.toString().replace("By.xpath:", "").concat("[@id='" + webElementId + "']"))).clear();
+        wd.findElement(By.xpath(locator.toString().replace("By.xpath:", "").concat("[@id='" + webElementId + "']"))).sendKeys(stringToType);
+    }
+  }
+
+  protected void type(String fieldName, String stringToType, String fieldProperty, Integer timeout, Integer index) {
+    String xpath = getXpath(fieldName, null, fieldProperty, null);
+
+    if (!waitForDisplayed((By.xpath(xpath)), timeout)) {
+      System.out.println("I am reviewing here");
+      System.out.println("The field with name " + fieldName + " wasn't found,the value's field is " + stringToType + " and object id is " + wd.findElement(By.xpath(xpath)).getAttribute("class"));
+    }
+
+    String className = wd.findElement(By.xpath(xpath)).getAttribute("class");
+
+    switch (className) {
+      case "z-combobox-input":
+        if (!stringToType.equals(wd.findElement(By.xpath(xpath.concat("//following-sibling::a"))).getText())) {
+          wd.findElement(By.xpath(xpath.concat("//following-sibling::a"))).click();
+
+          String improvedStringToType = null;
+          String[] fieldNameArray = stringToType.split(" ");
+          if (fieldNameArray.length > 1) {
+            improvedStringToType = stringToType.trim().replace(" ", "\u00A0");
+          } else {
+            improvedStringToType = stringToType;
+          }
+          wd.findElement(By.xpath("//span[@class='z-comboitem-text'][text()='" + improvedStringToType + "']")).click();
+        }
+        break;
+      case "z-datebox-input":
+        if (!waitForDisplayed((By.xpath(xpath)), timeout)) {
+          System.out.println("The field with name " + fieldName + " wasn't found,the value's field is " + stringToType + " and object id is " + wd.findElement(By.xpath(xpath)).getAttribute("class"));
+        }
+      default:
+
+        if (!waitForDisplayed((By.xpath(xpath)), timeout)) {
+          System.out.println("The field with name " + fieldName + " wasn't found,the value's field is " + stringToType + " and object id is " + wd.findElement(By.xpath(xpath)).getAttribute("class"));
+        }
+        wd.findElement(By.xpath(xpath)).clear();
+        wd.findElement(By.xpath(xpath)).sendKeys(stringToType);
+    }
+
+
+  }
+
+  protected String getXpath(String fieldName, String tagName, String fieldProperty, Integer index) {
+
+    String xpath = null;
+    List<WebElement> elements;
+    String improvedFieldName = fieldName;
+    String[] fieldNameArray = fieldName.split(" ");
+//    int trueSize = 0;
+
+
+    if (index == null) index = 1;
+
+    if (fieldNameArray.length > 1) {
+      if (fieldProperty == "span" || fieldProperty == "input" || fieldProperty == "textarea") {
+        improvedFieldName = fieldName.trim().replace(" ", "\u00A0");
+      } else improvedFieldName = fieldName;
+    }
+
+    if (fieldProperty == null || fieldProperty.equals("") || !fieldProperty.equals("title")) {
+      if (tagName == null || tagName.equals("")) tagName = "span";
+      if (!waitForDisplayedList((By.xpath("//" + tagName + "[normalize-space(text())='" + improvedFieldName + "']")), 5)) {
+        System.out.println("I am reviewing here in the list ");
+        System.out.println("The tag name  " + tagName + " wasn't found in the method getXpath and field name " + improvedFieldName);
+      }
+//      System.out.println("The size of collection first stop " + wd.findElements(By.xpath("//" + tagName + "[normalize-space(text())='" + improvedFieldName + "']")).size());
+//      trueSize = wd.findElements(By.xpath("//" + tagName + "[normalize-space(text())='" + improvedFieldName + "']")).size();
+      elements = wd.findElements(By.xpath("//" + tagName + "[normalize-space(text())='" + improvedFieldName + "']"));
+
+    } else {
+      if (!waitForDisplayedList((By.xpath("//" + tagName + "[@title=normalize-space('" + improvedFieldName + "')]")), 5)) {
+        System.out.println("I am reviewing here in the list ");
+        System.out.println("The tag name  " + tagName + " wasn't found in the method getXpath and field name " + improvedFieldName);
+      }
+//      trueSize = wd.findElements(By.xpath("//" + tagName + "[@title=normalize-space('" + improvedFieldName + "')]")).size();
+      elements = wd.findElements(By.xpath("//" + tagName + "[@title=normalize-space('" + improvedFieldName + "')]"));
+    }
+
+    if (fieldProperty != null && !fieldProperty.equals("") && !fieldProperty.equals("title")) {
+
+      switch (fieldProperty) {
+        case "span":
+          xpath = "//" + "span" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//span//input";
+          break;
+        case "input":
+          xpath = "//" + "span" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//input";
+/*
+        if (!fieldName.equals("Address")) {
+          xpath = "//" + fieldProperty + "[@id='" + elements.get(elements.size() - 1).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//input";
+        } else {
+          xpath = "//" + fieldProperty + "[@id='" + elements.get(elements.size() - 2).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//input";
+        }
+ */
+          break;
+        case "textarea":
+          xpath = "//" + "span" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//textarea";
+          break;
+        case "button":
+          xpath = "//" + "button" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']//parent::div[@class='z-vlayout-inner']//following-sibling::div//textarea";
+          break;
+
+        default:
+      }
+    } else {
+      switch (tagName) {
+        case "button":
+          xpath = "//" + "button" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']";
+          break;
+        case "div":
+          xpath = "//" + "div" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']";
+          break;
+        case "a":
+          xpath = "//" + "a" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']";
+          break;
+        case "span":
+          xpath = "//" + "span" + "[@id='" + elements.get(elements.size() - index).getAttribute("id") + "']";
+//          System.out.println("The size of collection second stop " + wd.findElements(By.xpath("//" + tagName + "[normalize-space(text())='" + improvedFieldName + "']")).size());
+          break;
+        default:
+      }
+    }
+    return xpath;
   }
 
   protected void fillGeneralPersonForm(GeneralPersonForm generalPersonForm) {
-    /*
-    waitWebElement(wd,finalId +"9p","id");
-    wd.findElement(By.cssSelector(finalId+"bo"));
-    //driver.findElement(By.id("hFBP_p-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBP3p']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"3p > span.z-comboitem-text"));
-    //driver.findElement(By.id("hFBPip-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBPop']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"op > span.z-comboitem-text"));
-    //driver.findElement(By.id("hFBPiq-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBPlq']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"lq > span.z-comboitem-text"));
-*/
 
-    wd.findElement(By.id(finalId+"1i-real")).click();
-    wd.findElement(By.id(finalId+"1i-real")).clear();
-    //wd.findElement(By.id(finalId+"1i-real")).sendKeys("");
-    wd.findElement(By.id(finalId+"1i-real")).sendKeys(generalPersonForm.getCountry());
-    wd.findElement(By.id(finalId+"_p-real")).click();
-    wd.findElement(By.id(finalId+"_p-real")).sendKeys(generalPersonForm.getTitle());
-    wd.findElement(By.id(finalId+"ip-real")).click();
-    wd.findElement(By.id(finalId+"ip-real")).sendKeys(generalPersonForm.getSuffix());
-    wd.findElement(By.id(finalId +"9p")).click();
-    wd.findElement(By.id(finalId +"9p")).clear();
-    wd.findElement(By.id(finalId +"9p")).sendKeys(finalId);
-    wd.findElement(By.id(finalId +"cp")).clear();
-    wd.findElement(By.id(finalId +"cp")).sendKeys(generalPersonForm.getMi());
-    wd.findElement(By.id(finalId +"fp")).clear();
-    wd.findElement(By.id(finalId +"fp")).sendKeys(finalId);
-    wd.findElement(By.id(finalId +"8q-real")).click();
-    wd.findElement(By.id(finalId +"8q-real")).clear();
-    //wd.findElement(By.id(finalId +"8q-real")).sendKeys("");
-    wd.findElement(By.id(finalId +"8q-real")).sendKeys(generalPersonForm.getTaxIdType());
-    wd.findElement(By.id(finalId +"bq")).sendKeys(generalPersonForm.getTax_id());
-    wd.findElement(By.id(finalId +"iq-real")).click();
-    wd.findElement(By.id(finalId +"iq-real")).sendKeys("");
-    wd.findElement(By.id(finalId +"iq-real")).sendKeys(generalPersonForm.getTaxStatus());
-    wd.findElement(By.id(finalId +"rq")).click();
-//    wd.findElement(By.id(finalId +"rq")).clear();
-    wd.findElement(By.id(finalId +"rq")).sendKeys(generalPersonForm.getNumberOfExamptions());
-    wd.findElement(By.id(finalId +"yq")).clear();
-    wd.findElement(By.id(finalId +"yq")).sendKeys(generalPersonForm.getPayeeName());
-//    wd.findElement(By.id(finalId +"8q-icon")).click();
-//    wd.findElement(By.id(finalId +"20")).click();
-//    wd.findElement(By.id(finalId +"bq")).click();
-    wd.findElement(By.id(finalId +"4r-real")).clear();
-    wd.findElement(By.id(finalId +"4r-real")).sendKeys(generalPersonForm.getDob());
-    wd.findElement(By.id(finalId +"7r-real")).clear();
-    wd.findElement(By.id(finalId +"7r-real")).sendKeys(generalPersonForm.getDod());
-    wd.findElement(By.id(finalId +"ar-real")).click();
-    wd.findElement(By.id(finalId +"ar-real")).sendKeys(generalPersonForm.getGender());
-    wd.findElement(By.id(finalId +"hr-real")).click();
-    wd.findElement(By.id(finalId +"hr-real")).sendKeys(generalPersonForm.getMartialStatus());
-
-/*
-    //driver.findElement(By.id("pXDPyh-icon")).click();
-    //driver.findElement(By.id("pXDPxn")).click();
-    //driver.findElement(By.id("pXDPyh-icon")).click();
-    //driver.findElement(By.id("pXDPbo")).click();
-    wd.findElement(By.cssSelector(finalId+"bo"));
-    //driver.findElement(By.id("hFBP_p-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBP3p']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"3p > span.z-comboitem-text"));
-    //driver.findElement(By.id("hFBPip-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBPop']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"op > span.z-comboitem-text"));
-    //driver.findElement(By.id("hFBPiq-icon")).click();
-    //driver.findElement(By.xpath("//li[@id='hFBPlq']/span[2]")).click();
-    wd.findElement(By.cssSelector(finalId+"lq > span.z-comboitem-text"));
-    wd.findElement(By.id(finalId+"rq")).click();
-    wd.findElement(By.id(finalId+"rq")).clear();
-    wd.findElement(By.id(finalId+"rq")).sendKeys("2");
-    wd.findElement(By.id(finalId+"yq")).click();
-    wd.findElement(By.id(finalId+"yq")).clear();
-    wd.findElement(By.id(finalId+"yq")).sendKeys("Payee Name");
-    wd.findElement(By.id(finalId+"4r-real")).click();
-    wd.findElement(By.id(finalId+"4r-real")).clear();
-    wd.findElement(By.id(finalId+"4r-real")).sendKeys("01/01/1980");
-    wd.findElement(By.id(finalId+"ar-icon")).click();
-    wd.findElement(By.id(finalId+"cr")).click();
-    wd.findElement(By.id(finalId+"hr-icon")).click();
-    wd.findElement(By.cssSelector(finalId+"jr > span.z-comboitem-text"));
-
-*/
-
-
+    type("Title", generalPersonForm.getTitle(), "span", null, null);
+    type("First Name", extractID(), "input", null, null);
+    type("MI", generalPersonForm.getMi(), "input", null, null);
+    type("Last Name", "LastNameTest.", "input", null, null);
+    type("Suffix", generalPersonForm.getSuffix(), "input", null, null);
+    type("Tax ID Type", generalPersonForm.getTaxIdType(), "span", null, null);
+    type("Tax ID", generalPersonForm.getTax_id(), "input", null, null);
+    type("Tax Status", generalPersonForm.getTaxStatus(), "span", null, null);
+    type("Number of Exemptions", generalPersonForm.getNumberOfExamptions(), "input", null, null);
+    type("Payee Name", generalPersonForm.getPayeeName(), "input", null, null);
+    type("Date of Birth", generalPersonForm.getDob(), "span", 15, null);
+    type("Date of Death", "", "span", null, null);
+    type("Gender", generalPersonForm.getGender(), "span", null, null);
+    type("Marital Status", generalPersonForm.getMartialStatus(), "span", null, null);
   }
 
-    protected void logOut() {
-    wd.findElement(By.id(finalId +"e")).click();
+  protected void logOut() {
+    click("Logout", "a", null, null, null);
   }
+
   protected String getLastObjectId(String xpath) {
 //    List<WebElement> elements =wd.findElements(By.xpath("//span[normalize-space(text())='Address']"));
-    List<WebElement> elements =wd.findElements(By.xpath(xpath));
-    String webElementId = elements.get(elements.size()-1).getAttribute("id");
+    List<WebElement> elements = wd.findElements(By.xpath(xpath));
+    String webElementId = elements.get(elements.size() - 1).getAttribute("id");
     return webElementId;
   }
 
   protected void submitPersonCreation() {
-
-    String webElementId=getLastObjectId("//a[@class='z-toolbarbutton'][@title='Save']");
-    click(By.xpath("//a[@id="+"'"+webElementId+"'"+"]//span//img[@src='assets/images/global_save.gif']"),3);
-  //    wd.findElement(By.id(finalId +"ww0-cnt")).click();
-    //By.xpath("//img[@src='web/L001/images/IMAGENAME.jpg']"))
+    click("Save", "a", "title", null, null);
   }
 
   protected void initPersonCreation() {
-    waitWebElement(wd,"//div[3]/table/tbody/tr","xpath");
-    wd.findElement(By.id(finalId +"90")).click();
+    click("Create Person", "button", "", null, null);
   }
 
-  protected void extractID() {
-
-    finalId = wd.findElement(By.xpath("//div[3]/table/tbody/tr")).getAttribute("id").substring(0,4);
-    //String finalId = id.substring(0, 4);
+  protected String extractID() {
+    finalId = wd.findElement(By.xpath("//div[3]/table/tbody/tr")).getAttribute("id").substring(0, 4);
     System.out.println("Id attribute is " + finalId);
-    //return id;
+    return finalId;
   }
 
   protected void waitWebElement(WebDriver wd, String expression, String waitIdParameter) {
-    WebDriverWait wait = new WebDriverWait(wd,30);
+    WebDriverWait wait = new WebDriverWait(wd, 30);
     //wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(finalIdN+"60-cave")));
-    if (waitIdParameter=="xpath") {
+    if (waitIdParameter == "xpath") {
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath(expression)));
-    } else if (waitIdParameter=="id") {
+    } else if (waitIdParameter == "id") {
       wait.until(ExpectedConditions.visibilityOfElementLocated(By.id(expression)));
     }
-
   }
 
-//  @AfterMethod(alwaysRun = true)
+  //  @AfterMethod(alwaysRun = true)
   public void tearDown() throws Exception {
     wd.quit();
   }
 
-  private boolean isElementPresent(By by) {
+  private boolean isElementPresent(By locator) {
     try {
-      wd.findElement(by);
+      wd.findElement(locator);
       return true;
     } catch (NoSuchElementException e) {
       return false;
@@ -241,23 +297,49 @@ public class TestBase {
     }
   }
 
-  public Boolean waitForDisplayed (By locator, Integer ... timeout){
+  public Boolean waitForDisplayed(By locator, Integer... timeout) {
     try {
-
-      waitFor(ExpectedConditions.visibilityOfElementLocated(locator),timeout.length>0?timeout[0] :null);
-      waitFor(ExpectedConditions.elementToBeClickable(locator),timeout.length>0?timeout[0] :null);
+      waitFor(ExpectedConditions.visibilityOfElementLocated(locator), timeout.length > 0 ? timeout[0] : null);
+      waitFor(ExpectedConditions.elementToBeClickable(locator), timeout.length > 0 ? timeout[0] : null);
+      waitFor(ExpectedConditions.presenceOfElementLocated(locator), timeout.length > 0 ? timeout[0] : null);
     } catch (org.openqa.selenium.TimeoutException exception) {
+      System.out.println("I am reviewing fail of error from TimeoutException " + exception.getMessage());
       return false;
-    }
-    catch (org.openqa.selenium.InvalidElementStateException exception) {
+    } catch (org.openqa.selenium.ElementNotInteractableException exception) {
+      System.out.println("I am reviewing fail of error from ElementNotInteractableException " + exception.getMessage());
+      return false;
+    } catch (org.openqa.selenium.InvalidElementStateException exception) {
+      System.out.println("I am reviewing fail of error from InvalidElementStateException" + exception.getMessage());
       return false;
     }
     return true;
   }
 
-  private void waitFor(ExpectedCondition<WebElement> condition, Integer timeout){
-    timeout= timeout !=null ? timeout :5;
-    WebDriverWait wait = new WebDriverWait(wd,timeout);
+  public Boolean waitForDisplayedList(By locator, Integer... timeout) {
+    try {
+      waitForList(ExpectedConditions.presenceOfAllElementsLocatedBy(locator), timeout.length > 0 ? timeout[0] : null);
+    } catch (org.openqa.selenium.TimeoutException exception) {
+      System.out.println("I am reviewing fail of error from " + exception.getMessage());
+      return false;
+    } catch (org.openqa.selenium.ElementNotInteractableException exception) {
+      System.out.println("I am reviewing fail of error from " + exception.getMessage());
+      return false;
+    } catch (org.openqa.selenium.InvalidElementStateException exception) {
+      System.out.println("I am reviewing fail of error from " + exception.getMessage());
+      return false;
+    }
+    return true;
+  }
+
+  private void waitFor(ExpectedCondition<WebElement> condition, Integer timeout) {
+    timeout = timeout != null ? timeout : 5;
+    WebDriverWait wait = new WebDriverWait(wd, timeout);
+    wait.until(condition);
+  }
+
+  private void waitForList(ExpectedCondition<List<WebElement>> condition, Integer timeout) {
+    timeout = timeout != null ? timeout : 5;
+    WebDriverWait wait = new WebDriverWait(wd, timeout);
     wait.until(condition);
   }
 }

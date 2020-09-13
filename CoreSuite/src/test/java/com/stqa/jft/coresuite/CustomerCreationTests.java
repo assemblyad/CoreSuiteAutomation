@@ -12,7 +12,7 @@ public class CustomerCreationTests extends TestBase {
     extractID();
     gotoCustomerManagement();
     initPersonCreation();
-    fillGeneralPersonForm(new GeneralPersonForm("United States", "Mr.", "Jr.", "m", "SSN", "000-00-0010", "Married - Filing Joint", "2", "Payee Name", "01/01/1990", "", "Female", "Common Law"));
+    fillGeneralPersonForm(new GeneralPersonForm("United States", "Mr.", "Jr.", "m", "SSN", "000-00-0014", "Married - Filing Joint", "2", "Payee Name", "01/01/1990", "", "Female", "Common Law"));
     submitPersonCreation();
     returnToHomeTab();
     logOut();
